@@ -1,0 +1,22 @@
+# Archivos de reportes y descargas
+descargas_kml/
+*.kml
+
+# Python y entorno
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Logs y temporales
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
