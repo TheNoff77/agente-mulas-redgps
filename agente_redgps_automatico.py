@@ -17,6 +17,15 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 # URL del Webhook de Google Sheets (creado via Google Apps Script)
 GOOGLE_SHEETS_WEBHOOK_URL = os.getenv("GOOGLE_SHEETS_WEBHOOK_URL", "")
 
+# Verificación de credenciales al iniciar
+print("--- Diagnóstico de Credenciales ---")
+print(f"• REDGPS_USER: {'✅ Presente' if REDGPS_USER else '❌ VACÍO (Falta Secret)'}")
+print(f"• REDGPS_PASSWORD: {'✅ Presente' if REDGPS_PASSWORD else '❌ VACÍO (Falta Secret)'}")
+print(f"• TELEGRAM_TOKEN: {'✅ Presente' if TELEGRAM_TOKEN else '❌ VACÍO (Falta Secret)'}")
+print(f"• TELEGRAM_CHAT_ID: {'✅ Presente' if TELEGRAM_CHAT_ID else '❌ VACÍO (Falta Secret)'}")
+print(f"• GOOGLE_SHEETS_WEBHOOK_URL: {'✅ Presente' if GOOGLE_SHEETS_WEBHOOK_URL else 'ℹ️ No configurado (Opcional)'}")
+print("-----------------------------------")
+
 VEHICULOS = [
     {"placa": "XVP020", "imei": "862476052151957", "label": "XVP020 - 862476052151957"},
     {"placa": "XVP022", "imei": "862476053363858", "label": "XVP022 - 862476053363858"}
@@ -129,16 +138,24 @@ def procesar_kml(ruta_kml, placa):
     return mensaje, datos_auditoria
 
 def enviar_telegram(texto):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        print("   ❌ [Telegram] No se puede enviar porque TELEGRAM_TOKEN o TELEGRAM_CHAT_ID no están configurados en GitHub Secrets.")
+        return False
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"}
     try:
         r = requests.post(url, json=payload, timeout=10)
         if r.status_code == 200:
             print("   📲 Enviado a Telegram correctamente.")
+            return True
         else:
-            print(f"   ⚠️ Error al enviar a Telegram: {r.text}")
+            print(f"   ❌ [Telegram] Error al enviar ({r.status_code}): {r.text}")
+            if r.status_code == 401:
+                print("   👉 CAUSA: El token fue revocado por Telegram (o es inválido). Debes generar uno nuevo en @BotFather y actualizar el secret TELEGRAM_TOKEN.")
+            return False
     except Exception as e:
-        print(f"   ⚠️ Error de conexion con Telegram: {e}")
+        print(f"   ❌ [Telegram] Error de conexion: {e}")
+        return False
 
 def registrar_en_google_sheets(datos):
     if not GOOGLE_SHEETS_WEBHOOK_URL:
